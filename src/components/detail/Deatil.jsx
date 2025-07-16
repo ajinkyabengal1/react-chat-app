@@ -1,7 +1,8 @@
 import React from "react";
 import "./detail.css";
+import { auth } from "../../lib/firebase";
 
-const Deatil = () => {
+const Detail = () => {
   return (
     // chat user Details
     <div className="detail">
@@ -73,10 +74,12 @@ const Deatil = () => {
           </div>
         </div>
         <button>Block User</button>
-        <button className="logout">Logout</button>
+        <button className="logout" onClick={() => auth.signOut()}>
+          Logout
+        </button>
       </div>
     </div>
   );
 };
 
-export default Deatil;
+export default Detail;
