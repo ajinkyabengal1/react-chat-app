@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./chatList.css";
 import AddUser from "./addUser/AddUser";
 import { useUserStore } from "../../../lib/userStore";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { useEffect } from "react";
 
@@ -13,16 +13,24 @@ const ChatList = () => {
   const { currentUser } = useUserStore();
 
   useEffect(() => {
+    if (!currentUser?.id) return;
+
     const unSub = onSnapshot(
-      doc(db, "userChats", currentUser.id),
+      doc(db, "userschats", currentUser.id),
       async (res) => {
-        const items = res.data().chats;
+        const data = res.data();
+        if (!data || !Array.isArray(data.chats)) {
+          setChats([]);
+          return;
+        }
+
+        const items = data.chats;
 
         const promisses = items.map(async (item) => {
           const userDocRef = doc(db, "users", item.reciverId);
           const userDocSnap = await getDoc(userDocRef);
 
-          const user = userDocRef.data();
+          const user = userDocSnap.data();
           return { ...item, user };
         });
 
@@ -33,9 +41,7 @@ const ChatList = () => {
     return () => {
       unSub();
     };
-  }, [currentUser.id]);
-
-  console.log(chats, "chats");
+  }, [currentUser?.id]);
 
   return (
     <div className="chatList">
@@ -52,15 +58,20 @@ const ChatList = () => {
         />
       </div>
       {/* char list sec */}
-      {chats.map((chat) => (
-        <div className="item" key={chat.ChatId}>
-          <img src="./avatar.png" alt="" />
-          <div className="texts">
-            <span>{chat.user.name}</span>
-            <p>{chat.lastMessage}</p>
-          </div>
-        </div>
-      ))}
+      {chats.map(
+        (chat) => (
+          console.log(chat, "chats"),
+          (
+            <div className="item" key={chat.ChatId}>
+              <img src={chat.user.avatar || "./avatar.png"} alt="" />
+              <div className="texts">
+                <span>{chat.user.username}</span>
+                <p>{chat.lastMessage}</p>
+              </div>
+            </div>
+          )
+        )
+      )}
 
       {addMode && <AddUser />}
     </div>
