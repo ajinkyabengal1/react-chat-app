@@ -10,6 +10,7 @@ import { useEffect } from "react";
 const ChatList = () => {
   const [addMode, setAddMode] = useState(false);
   const [chats, setChats] = useState([]);
+  const [inputText, setInputText] = useState("");
 
   const { currentUser } = useUserStore();
   const { chatId, changeChat } = useChatStore();
@@ -50,7 +51,6 @@ const ChatList = () => {
       console.error("handleSelect: chat or chat.user is undefined", chat);
       return;
     }
-    changeChat(chat.chatId, chat.user);
 
     // check chats
     const userChats = chats.map((item) => {
@@ -62,25 +62,37 @@ const ChatList = () => {
       (item) => item.chatId === chat.chatId
     );
 
-    userChats[chatIndex].isnSeen = true;
+    userChats[chatIndex].isSeen = true;
 
     const userChatsRef = doc(db, "userschats", currentUser.id);
 
     try {
-      await updateDoc(userChats, {
-        chat: userChats,
+      await updateDoc(userChatsRef, {
+        chats: userChats,
       });
+      changeChat(chat.chatId, chat.user);
     } catch (error) {
       console.log(error);
     }
   };
+
+  // search chat func
+  const searchChats = chats.filter((c) =>
+    c.user.username.toLowerCase().includes(inputText.toLowerCase())
+  );
+
+  console.log(searchChats, "search");
 
   return (
     <div className="chatList">
       <div className="search">
         <div className="searchBar">
           <img src="./search.png" alt="" />
-          <input type="text" placeholder="Search" />
+          <input
+            type="text"
+            placeholder="Search"
+            onChange={(e) => setInputText(e.target.value)}
+          />
         </div>
         <img
           src={addMode ? "./minus.png" : "./plus.png"}
@@ -90,10 +102,10 @@ const ChatList = () => {
         />
       </div>
       {/* char list sec */}
-      {chats.map((chat) => (
+      {searchChats.map((chat) => (
         <div
           className="item"
-          key={chat.ChatId}
+          key={chat.chatId}
           onClick={() => handleSelect(chat)}
           style={{
             backgroundColor: chat?.isSeen ? "transparent" : "#5183fe",
@@ -101,7 +113,11 @@ const ChatList = () => {
         >
           <img src={chat.user.avatar || "./avatar.png"} alt="" />
           <div className="texts">
-            <span>{chat.user.username}</span>
+            <span>
+              {chat.user.blocked.includes(currentUser.id)
+                ? "User"
+                : chat.user.username}
+            </span>
             <p>{chat.lastMessage}</p>
           </div>
         </div>
